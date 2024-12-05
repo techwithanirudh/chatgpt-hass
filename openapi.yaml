@@ -1,0 +1,263 @@
+openapi: 3.1.0
+info:
+  title: Home Assistant REST API
+  description: RESTful API for interacting with Home Assistant.
+  version: 1.0.0
+  contact:
+    name: Home Assistant
+    url: https://www.home-assistant.io/
+    email: support@home-assistant.io
+servers:
+  - url: https://homeassistant.yourdomain.com
+    description: Production server
+paths:
+  /api/:
+    get:
+      operationId: getApiStatus
+      summary: Check if the API is running
+      description: Returns a message if the API is up and running.
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          description: API is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: API running.
+  /api/config:
+    get:
+      operationId: getConfig
+      summary: Get current configuration
+      description: Returns the current configuration of Home Assistant as JSON.
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          description: Current configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  components:
+                    type: array
+                    items:
+                      type: string
+                  config_dir:
+                    type: string
+                  elevation:
+                    type: integer
+                  latitude:
+                    type: number
+                  longitude:
+                    type: number
+                  location_name:
+                    type: string
+                  time_zone:
+                    type: string
+                  unit_system:
+                    type: object
+                    properties:
+                      length:
+                        type: string
+                      mass:
+                        type: string
+                      temperature:
+                        type: string
+                      volume:
+                        type: string
+                  version:
+                    type: string
+                    example: 2023.11.2
+  /api/states:
+    get:
+      operationId: getAllStates
+      summary: Get all states
+      description: Returns an array of all state objects.
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          description: Array of state objects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    entity_id:
+                      type: string
+                    state:
+                      type: string
+                    last_changed:
+                      type: string
+                      format: date-time
+                    attributes:
+                      type: object
+  /api/states/{entity_id}:
+    post:
+      operationId: updateEntityState
+      summary: Update or create a state
+      description: Updates or creates a state for a specified entity ID.
+      x-openai-isConsequential: false
+      parameters:
+        - name: entity_id
+          in: path
+          required: true
+          description: The ID of the entity.
+          schema:
+            type: string
+      requestBody:
+        description: State object to create or update
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                state:
+                  type: string
+                attributes:
+                  type: object
+      responses:
+        "200":
+          description: State updated
+        "201":
+          description: New state created
+  /api/events:
+    get:
+      operationId: getAllEvents
+      summary: Get all events
+      description: Returns an array of all event objects.
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          description: Array of event objects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    event:
+                      type: string
+                    listener_count:
+                      type: integer
+  /api/services:
+    get:
+      operationId: getAllServices
+      summary: Get all services
+      description: Returns an array of all available services.
+      x-openai-isConsequential: false
+      responses:
+        "200":
+          description: Array of service objects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    domain:
+                      type: string
+                    services:
+                      type: array
+                      items:
+                        type: string
+  /api/services/{domain}/{service}:
+    post:
+      operationId: callService
+      summary: Call a service
+      description: Calls a specific service within a domain.
+      x-openai-isConsequential: false
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          description: The domain of the service (e.g., `light`, `switch`).
+          schema:
+            type: string
+        - name: service
+          in: path
+          required: true
+          description: The name of the service to call (e.g., `turn_on`, `turn_off`).
+          schema:
+            type: string
+      requestBody:
+        description: Service data payload required to execute the service.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entity_id:
+                  type: string
+                  description: The unique ID of the entity to apply the service to (e.g., `light.living_room`).
+                  example: light.living_room
+                data:
+                  type: object
+                  description: Additional service-specific data payload.
+                  example:
+                    brightness: 255
+                    color_name: blue
+              required:
+                - entity_id
+      responses:
+        "200":
+          description: Service executed successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    entity_id:
+                      type: string
+                    state:
+                      type: string
+        "400":
+          description: Invalid service data or request format.
+  /api/history/period/{timestamp}:
+    get:
+      operationId: getStateHistory
+      summary: Get state changes over a period
+      description: Returns state changes for the specified period.
+      x-openai-isConsequential: false
+      parameters:
+        - name: timestamp
+          in: path
+          required: true
+          description: Start timestamp in ISO8601 format.
+          schema:
+            type: string
+        - name: filter_entity_id
+          in: query
+          description: Comma-separated list of entity IDs to filter.
+          schema:
+            type: string
+        - name: end_time
+          in: query
+          description: End timestamp in ISO8601 format.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: State changes over the period
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    entity_id:
+                      type: string
+                    state:
+                      type: string
